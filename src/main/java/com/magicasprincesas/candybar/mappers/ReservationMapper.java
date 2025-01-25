@@ -34,6 +34,7 @@ public class ReservationMapper {
         .id(reservation.getId())
         .reservationDate(reservation.getReservationDate())
         .deposit(reservation.getDeposit())
+        .deleted(reservation.isDeleted())
         .customer(customerMapper.toDto(reservation.getCustomer()))
         .build();
   }
