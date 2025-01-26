@@ -1,7 +1,9 @@
 package com.magicasprincesas.candybar.controllers;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -42,9 +44,11 @@ public class ReservationController {
   }
 
   @DeleteMapping("/{id}")
-  public ResponseEntity<String> deleteReservation(@PathVariable Long id) {
+  public ResponseEntity<Map<String, String>> deleteReservation(@PathVariable Long id) {
     reservationService.deleteReservation(id);
-    return ResponseEntity.ok("Reservation deleted successfully");
+    Map<String, String> response = new HashMap<>();
+    response.put("message", "Reservation deleted successfully");
+    return ResponseEntity.ok(response);
   }
 
   @PutMapping("/{id}")
