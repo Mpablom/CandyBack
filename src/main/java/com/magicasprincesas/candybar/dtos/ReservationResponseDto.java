@@ -18,5 +18,6 @@ public class ReservationResponseDto {
   private LocalDate reservationDate;
   private double deposit;
   private boolean deleted; 
+  private String location;
   private CustomerResponseDto customer;
 }

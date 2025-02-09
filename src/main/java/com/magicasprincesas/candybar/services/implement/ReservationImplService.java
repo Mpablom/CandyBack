@@ -34,8 +34,8 @@ public class ReservationImplService implements ReservationService {
   @Override
   public ReservationResponseDto saveReservation(ReservationRequestDto requestDto) {
     LocalDate reservationDate = requestDto.getReservationDate();
-
     LocalDate currentDate = LocalDate.now();
+    
     if (reservationDate.isBefore(currentDate)) {
       throw new CustomException("Reservation date cannot be in the past.");
     }

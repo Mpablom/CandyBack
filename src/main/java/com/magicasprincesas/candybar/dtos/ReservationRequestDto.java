@@ -17,5 +17,6 @@ public class ReservationRequestDto {
   private LocalDate reservationDate;
   private double deposit;
   private boolean deleted;
+  private String location;
   private Long customerId;
 }

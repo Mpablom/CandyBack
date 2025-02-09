@@ -30,7 +30,8 @@ public class Reservation {
   private LocalDate reservationDate;
   private double deposit;
   private boolean deleted;
-  
+  private String location;
+
   @ManyToOne
   @JoinColumn(name = "customer_id", nullable = false)
   private Customer customer;

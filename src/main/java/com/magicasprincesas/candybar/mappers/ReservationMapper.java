@@ -25,7 +25,9 @@ public class ReservationMapper {
     return Reservation.builder()
         .reservationDate(requestDto.getReservationDate())
         .deposit(requestDto.getDeposit())
+        .location(requestDto.getLocation())
         .customer(customer)
+        .deleted(false)
         .build();
   }
 
@@ -34,6 +36,7 @@ public class ReservationMapper {
         .id(reservation.getId())
         .reservationDate(reservation.getReservationDate())
         .deposit(reservation.getDeposit())
+        .location(reservation.getLocation())
         .deleted(reservation.isDeleted())
         .customer(customerMapper.toDto(reservation.getCustomer()))
         .build();
