@@ -1,11 +1,13 @@
 package com.magicasprincesas.candybar.controllers;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.magicasprincesas.candybar.dtos.ReservationRequestDto;
 import com.magicasprincesas.candybar.dtos.ReservationResponseDto;
+import com.magicasprincesas.candybar.exceptions.CustomException;
 import com.magicasprincesas.candybar.services.ReservationService;
 
 @RestController
@@ -28,8 +31,16 @@ public class ReservationController {
   private ReservationService reservationService;
 
   @PostMapping
-  public ReservationResponseDto createReservation(@RequestBody ReservationRequestDto request) {
-    return reservationService.saveReservation(request);
+  public ResponseEntity<?> createReservation(@RequestBody ReservationRequestDto request) {
+    try {
+      ReservationResponseDto response = reservationService.saveReservation(request);
+      return new ResponseEntity<>(response, HttpStatus.CREATED);
+    } catch (CustomException e) {
+      return ResponseEntity.badRequest().body(
+          Map.of(
+              "timestamp", LocalDateTime.now(),
+              "message", e.getMessage()));
+    }
   }
 
   @GetMapping("/date/{date}")
@@ -71,5 +82,15 @@ public class ReservationController {
   @PutMapping("/recover/{id}")
   public ReservationResponseDto recoverReservation(@PathVariable Long id) {
     return reservationService.recoverReservation(id);
+  }
+
+  @DeleteMapping("/past/all")
+  public ResponseEntity<Map<String, String>> deletePastReservationsAndCustomers() {
+    reservationService.deletePastReservationsAndCustomers();
+
+    Map<String, String> response = new HashMap<>();
+    response.put("message", "Reservas pasadas y clientes asociados eliminados correctamente");
+
+    return ResponseEntity.ok(response);
   }
 }

@@ -35,7 +35,7 @@ public class ReservationImplService implements ReservationService {
   public ReservationResponseDto saveReservation(ReservationRequestDto requestDto) {
     LocalDate reservationDate = requestDto.getReservationDate();
     LocalDate currentDate = LocalDate.now();
-    
+
     if (reservationDate.isBefore(currentDate)) {
       throw new CustomException("Reservation date cannot be in the past.");
     }
@@ -44,8 +44,11 @@ public class ReservationImplService implements ReservationService {
     if (reservationsCount >= 3) {
       throw new CustomException("Cannot book more than 3 reservations per day.");
     }
+    Customer customer = customerRepository.findById(requestDto.getCustomerId())
+        .orElseThrow(() -> new CustomException("Cliente no encontrado con ID: " + requestDto.getCustomerId()));
 
     Reservation reservation = reservationMapper.toEntity(requestDto);
+    reservation.setCustomer(customer);
     reservation = reservationRepository.save(reservation);
     return reservationMapper.toDto(reservation);
   }
@@ -109,6 +112,32 @@ public class ReservationImplService implements ReservationService {
         .collect(Collectors.toList());
 
     customerRepository.deleteAll(customersToDelete);
+  }
+
+  @Override
+  @Transactional
+  public void deletePastReservationsAndCustomers() {
+    LocalDate currentDate = LocalDate.now();
+
+    List<Reservation> pastReservations = reservationRepository.findByReservationDateBefore(currentDate);
+    reservationRepository.deleteAll(pastReservations);
+
+    List<Customer> customersWithPastReservations = pastReservations.stream()
+        .map(Reservation::getCustomer)
+        .distinct()
+        .collect(Collectors.toList());
+
+    for (Customer customer : customersWithPastReservations) {
+      List<Reservation> customerReservations = reservationRepository.findByCustomer(customer);
+
+      boolean hasFutureReservations = customerReservations.stream()
+          .anyMatch(reservation -> reservation.getReservationDate().isAfter(currentDate) ||
+              reservation.getReservationDate().isEqual(currentDate));
+
+      if (!hasFutureReservations) {
+        customerRepository.delete(customer);
+      }
+    }
   }
 
   @Override

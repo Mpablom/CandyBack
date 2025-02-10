@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.magicasprincesas.candybar.entities.Customer;
 import com.magicasprincesas.candybar.entities.Reservation;
 
 @Repository
@@ -25,4 +26,6 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long>{
   List<Reservation> findByReservationDateBefore(LocalDate date);
 
   Optional<Reservation> findByIdAndDeletedTrue(Long id);
+
+  List<Reservation> findByCustomer(Customer customer);
 }

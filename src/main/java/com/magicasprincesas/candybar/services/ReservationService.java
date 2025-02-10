@@ -15,4 +15,5 @@ public interface ReservationService {
   void deletePastReservations();
   void deleteCustomersWithPastReservations();
   ReservationResponseDto recoverReservation(Long id);
+  void deletePastReservationsAndCustomers();
 }
