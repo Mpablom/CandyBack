@@ -4,7 +4,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.magicasprincesas.candybar.dtos.CustomerRequestDto;
@@ -24,18 +23,18 @@ import jakarta.transaction.Transactional;
 @Service
 public class ReservationImplService implements ReservationService {
 
-  @Autowired
-  private ReservationRepository reservationRepository;
+  private final ReservationRepository reservationRepository;
+  private final ReservationMapper reservationMapper;
+  private final CustomerRepository customerRepository;
+  private final CustomerMapper customerMapper;
 
-  @Autowired
-  private ReservationMapper reservationMapper;
-
-  @Autowired
-  private CustomerRepository customerRepository;
-  
-  @Autowired
-  private CustomerMapper customerMapper;
-  
+  public ReservationImplService(ReservationRepository reservationRepository, ReservationMapper reservationMapper,
+      CustomerRepository customerRepository, CustomerMapper customerMapper) {
+    this.reservationRepository = reservationRepository;
+    this.reservationMapper = reservationMapper;
+    this.customerRepository = customerRepository;
+    this.customerMapper = customerMapper;
+  }
 
   @Override
   public ReservationResponseDto saveReservation(ReservationRequestDto requestDto) {
@@ -46,26 +45,20 @@ public class ReservationImplService implements ReservationService {
       throw new CustomException("Reservation date cannot be in the past.");
     }
 
-    int reservationsCount = reservationRepository.countByReservationDate(reservationDate);
-    if (reservationsCount >= 3) {
+    if (reservationRepository.countByReservationDate(reservationDate) >= 3) {
       throw new CustomException("Cannot book more than 3 reservations per day.");
     }
-    Customer customer = customerRepository
-        .findByFirstNameIgnoreCaseAndLastNameIgnoreCase(requestDto.getFirstName(), requestDto.getLastName())
-        .orElseGet(() -> {
-            CustomerRequestDto customerRequestDto = new CustomerRequestDto();
-            customerRequestDto.setFirstName(requestDto.getFirstName());
-            customerRequestDto.setLastName(requestDto.getLastName());
-            customerRequestDto.setPhone(requestDto.getPhone());
 
-            Customer newCustomer = customerMapper.toEntity(customerRequestDto);
-            return customerRepository.save(newCustomer);
+    Customer customer = customerRepository
+        .findByFirstNameIgnoreCaseAndLastNameIgnoreCaseAndPhone(
+            requestDto.getFirstName(), requestDto.getLastName(), requestDto.getPhone())
+        .orElseGet(() -> {
+          validateCustomerData(requestDto);
+          return customerRepository.save(customerMapper.toEntity(
+              createCustomerDto(requestDto)));
         });
 
-    if (requestDto.getPhone() != null && !requestDto.getPhone().equals(customer.getPhone())) {
-        customer.setPhone(requestDto.getPhone());
-        customerRepository.save(customer);
-    }
+    updateCustomerPhoneIfNeeded(requestDto, customer);
 
     Reservation reservation = reservationMapper.toEntity(requestDto);
     reservation.setCustomer(customer);
@@ -74,11 +67,31 @@ public class ReservationImplService implements ReservationService {
     return reservationMapper.toDto(reservation);
   }
 
+  private void validateCustomerData(ReservationRequestDto requestDto) {
+    if (requestDto.getFirstName() == null || requestDto.getLastName() == null) {
+      throw new CustomException("First name and last name are required to create a customer.");
+    }
+  }
+
+  private CustomerRequestDto createCustomerDto(ReservationRequestDto requestDto) {
+    return new CustomerRequestDto(
+        requestDto.getFirstName(),
+        requestDto.getLastName(),
+        requestDto.getPhone());
+  }
+
+  private void updateCustomerPhoneIfNeeded(ReservationRequestDto requestDto, Customer customer) {
+    if (requestDto.getPhone() != null && !requestDto.getPhone().equals(customer.getPhone())) {
+      customer.setPhone(requestDto.getPhone());
+      customerRepository.save(customer);
+    }
+  }
+
   @Override
   public ReservationResponseDto getReservationById(Long id) {
-    Reservation reservation = reservationRepository.findById(id)
-        .orElseThrow(() -> new CustomException("Reserva no encontrada"));
-    return reservationMapper.toDto(reservation);
+    return reservationMapper.toDto(
+        reservationRepository.findById(id)
+            .orElseThrow(() -> new CustomException("Reservation not found")));
   }
 
   @Override
@@ -106,47 +119,51 @@ public class ReservationImplService implements ReservationService {
   @Override
   public ReservationResponseDto updateReservation(Long id, ReservationRequestDto request) {
     Reservation reservation = reservationRepository.findById(id)
-        .orElseThrow(() -> new CustomException("Reserva no encontrada con id: " + id));
+        .orElseThrow(() -> new CustomException("Reservation not found with id: " + id));
 
-    Customer customer = customerRepository
-        .findByFirstNameIgnoreCaseAndLastNameIgnoreCase(request.getFirstName(), request.getLastName())
-        .orElseGet(() -> {
-          CustomerRequestDto customerRequestDto = new CustomerRequestDto();
-          customerRequestDto.setFirstName(request.getFirstName());
-          customerRequestDto.setLastName(request.getLastName());
-          customerRequestDto.setPhone(request.getPhone());
-          Customer newCustomer = customerMapper.toEntity(customerRequestDto);
-          return customerRepository.save(newCustomer);
-        });
-
-    if (request.getPhone() != null && !request.getPhone().equals(customer.getPhone())) {
-      customer.setPhone(request.getPhone());
-      customerRepository.save(customer);
-    }
+    Customer customer = updateOrCreateCustomer(request, reservation.getCustomer());
 
     reservationMapper.updateReservationFromDto(request, reservation);
     reservation.setCustomer(customer);
 
-    Reservation updatedReservation = reservationRepository.save(reservation);
-    return reservationMapper.toDto(updatedReservation);
+    return reservationMapper.toDto(reservationRepository.save(reservation));
+  }
+
+  private Customer updateOrCreateCustomer(ReservationRequestDto request, Customer existingCustomer) {
+    if (existingCustomer == null) {
+      return customerRepository.save(
+          customerMapper.toEntity(createCustomerDto(request)));
+    } else {
+      updateCustomerData(existingCustomer, request);
+      return customerRepository.save(existingCustomer);
+    }
+  }
+
+  private void updateCustomerData(Customer customer, ReservationRequestDto request) {
+    if (!customer.getFirstName().equals(request.getFirstName())) {
+      customer.setFirstName(request.getFirstName());
+    }
+    if (!customer.getLastName().equals(request.getLastName())) {
+      customer.setLastName(request.getLastName());
+    }
+    if (!customer.getPhone().equals(request.getPhone())) {
+      customer.setPhone(request.getPhone());
+    }
   }
 
   @Override
   @Transactional
   public void deletePastReservations() {
     LocalDate currentDate = LocalDate.now();
-    List<Reservation> pastReservations = reservationRepository.findByReservationDateBefore(currentDate);
-
-    reservationRepository.deleteAll(pastReservations);
+    reservationRepository.deleteAll(
+        reservationRepository.findByReservationDateBefore(currentDate));
   }
 
   @Override
   @Transactional
   public void deleteCustomersWithPastReservations() {
     LocalDate currentDate = LocalDate.now();
-    List<Reservation> pastReservations = reservationRepository.findByReservationDateBefore(currentDate);
-
-    List<Customer> customersToDelete = pastReservations.stream()
+    List<Customer> customersToDelete = reservationRepository.findByReservationDateBefore(currentDate).stream()
         .map(Reservation::getCustomer)
         .distinct()
         .collect(Collectors.toList());
@@ -158,26 +175,19 @@ public class ReservationImplService implements ReservationService {
   @Transactional
   public void deletePastReservationsAndCustomers() {
     LocalDate currentDate = LocalDate.now();
-
     List<Reservation> pastReservations = reservationRepository.findByReservationDateBefore(currentDate);
     reservationRepository.deleteAll(pastReservations);
 
-    List<Customer> customersWithPastReservations = pastReservations.stream()
+    pastReservations.stream()
         .map(Reservation::getCustomer)
         .distinct()
-        .collect(Collectors.toList());
+        .filter(customer -> !hasFutureReservations(customer, currentDate))
+        .forEach(customerRepository::delete);
+  }
 
-    for (Customer customer : customersWithPastReservations) {
-      List<Reservation> customerReservations = reservationRepository.findByCustomer(customer);
-
-      boolean hasFutureReservations = customerReservations.stream()
-          .anyMatch(reservation -> reservation.getReservationDate().isAfter(currentDate) ||
-              reservation.getReservationDate().isEqual(currentDate));
-
-      if (!hasFutureReservations) {
-        customerRepository.delete(customer);
-      }
-    }
+  private boolean hasFutureReservations(Customer customer, LocalDate currentDate) {
+    return reservationRepository.findByCustomer(customer).stream()
+        .anyMatch(reservation -> !reservation.getReservationDate().isBefore(currentDate));
   }
 
   @Override
@@ -187,7 +197,6 @@ public class ReservationImplService implements ReservationService {
         .orElseThrow(() -> new CustomException("Deleted reservation not found with id: " + id));
 
     reservation.setDeleted(false);
-    reservation = reservationRepository.save(reservation);
-    return reservationMapper.toDto(reservation);
+    return reservationMapper.toDto(reservationRepository.save(reservation));
   }
 }

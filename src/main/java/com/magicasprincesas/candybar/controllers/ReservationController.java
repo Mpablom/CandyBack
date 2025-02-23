@@ -32,6 +32,7 @@ public class ReservationController {
 
   @PostMapping
   public ResponseEntity<?> createReservation(@RequestBody ReservationRequestDto request) {
+        System.out.println("Solicitud recibida: " + request.getFirstName() + " " + request.getLastName());
     try {
       ReservationResponseDto response = reservationService.saveReservation(request);
       return new ResponseEntity<>(response, HttpStatus.CREATED);

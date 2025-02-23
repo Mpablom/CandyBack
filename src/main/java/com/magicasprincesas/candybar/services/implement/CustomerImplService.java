@@ -3,7 +3,6 @@ package com.magicasprincesas.candybar.services.implement;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.magicasprincesas.candybar.dtos.CustomerRequestDto;
@@ -16,13 +15,14 @@ import com.magicasprincesas.candybar.services.CustomerService;
 
 @Service
 public class CustomerImplService implements CustomerService {
-
-  @Autowired
-  private CustomerRepository customerRepository;
-
-  @Autowired
-  private CustomerMapper customerMapper;
-
+  private final CustomerRepository customerRepository;
+  private final CustomerMapper customerMapper;
+  
+  public CustomerImplService( CustomerRepository customerRepository, CustomerMapper customerMapper){
+    this.customerRepository = customerRepository;
+    this.customerMapper = customerMapper;
+  }
+  
   @Override
   public CustomerResponseDto saveCustomer(CustomerRequestDto requestDto) {
     Customer customer = customerMapper.toEntity(requestDto);
