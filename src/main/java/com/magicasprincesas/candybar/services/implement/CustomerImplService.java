@@ -50,7 +50,7 @@ public class CustomerImplService implements CustomerService {
         .orElseThrow(() -> new CustomException("Customer not found with id: " + id));
 
     customer.setFirstName(request.getFirstName());
-    customer.setLasName(request.getLastName());
+    customer.setLastName(request.getLastName());
     customer.setPhone(request.getPhone());
 
     customer = customerRepository.save(customer);

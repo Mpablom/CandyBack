@@ -1,44 +1,22 @@
 package com.magicasprincesas.candybar.mappers;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 import com.magicasprincesas.candybar.dtos.ReservationRequestDto;
 import com.magicasprincesas.candybar.dtos.ReservationResponseDto;
-import com.magicasprincesas.candybar.entities.Customer;
 import com.magicasprincesas.candybar.entities.Reservation;
-import com.magicasprincesas.candybar.exceptions.CustomException;
-import com.magicasprincesas.candybar.repositories.CustomerRepository;
 
-@Component
-public class ReservationMapper {
+@Mapper(componentModel = "spring", uses = CustomerMapper.class)
+public interface ReservationMapper {
 
-  @Autowired
-  private CustomerMapper customerMapper;
+    @Mapping(target = "customer", source = ".")
+    Reservation toEntity(ReservationRequestDto requestDto);
 
-  @Autowired
-  private CustomerRepository customerRepository;
+    @Mapping(target = "customer", source = "customer")
+    ReservationResponseDto toDto(Reservation reservation);
 
-  public Reservation toEntity(ReservationRequestDto requestDto) {
-    Customer customer = customerRepository.findById(requestDto.getCustomerId())
-        .orElseThrow(() -> new CustomException("Customer not found with id: " + requestDto.getCustomerId()));
-    return Reservation.builder()
-        .reservationDate(requestDto.getReservationDate())
-        .deposit(requestDto.getDeposit())
-        .location(requestDto.getLocation())
-        .customer(customer)
-        .deleted(false)
-        .build();
-  }
-
-  public ReservationResponseDto toDto(Reservation reservation) {
-    return ReservationResponseDto.builder()
-        .id(reservation.getId())
-        .reservationDate(reservation.getReservationDate())
-        .deposit(reservation.getDeposit())
-        .location(reservation.getLocation())
-        .deleted(reservation.isDeleted())
-        .customer(customerMapper.toDto(reservation.getCustomer()))
-        .build();
-  }
+    @Mapping(target = "customer", source = ".")
+    void updateReservationFromDto(ReservationRequestDto dto, @MappingTarget Reservation entity);
 }

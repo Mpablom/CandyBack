@@ -28,7 +28,7 @@ public class Customer {
   private long id;
 
   private String firstName;
-  private String lasName;
+  private String lastName;
   private String phone;
   
   @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)

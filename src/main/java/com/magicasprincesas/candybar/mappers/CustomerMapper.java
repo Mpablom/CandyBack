@@ -1,28 +1,16 @@
 package com.magicasprincesas.candybar.mappers;
 
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 import com.magicasprincesas.candybar.dtos.CustomerRequestDto;
 import com.magicasprincesas.candybar.dtos.CustomerResponseDto;
 import com.magicasprincesas.candybar.entities.Customer;
 
-@Component
-public class CustomerMapper {
+@Mapper(componentModel = "spring")
+public interface CustomerMapper {
+  Customer toEntity(CustomerRequestDto requestDto);
 
-  public Customer toEntity(CustomerRequestDto requestDto) {
-    return Customer.builder()
-        .firstName(requestDto.getFirstName())
-        .lasName(requestDto.getLastName())
-        .phone(requestDto.getPhone())
-        .build();
-  }
-
-  public CustomerResponseDto toDto(Customer customer) {
-    return CustomerResponseDto.builder()
-        .id(customer.getId())
-        .firstName(customer.getFirstName())
-        .lastName(customer.getLasName())
-        .phone(customer.getPhone())
-        .build();
-  }
+  @Mapping(target = "lastName", source = "lastName")
+  CustomerResponseDto toDto(Customer customer);
 }

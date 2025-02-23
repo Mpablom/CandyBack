@@ -7,11 +7,13 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.magicasprincesas.candybar.dtos.CustomerRequestDto;
 import com.magicasprincesas.candybar.dtos.ReservationRequestDto;
 import com.magicasprincesas.candybar.dtos.ReservationResponseDto;
 import com.magicasprincesas.candybar.entities.Customer;
 import com.magicasprincesas.candybar.entities.Reservation;
 import com.magicasprincesas.candybar.exceptions.CustomException;
+import com.magicasprincesas.candybar.mappers.CustomerMapper;
 import com.magicasprincesas.candybar.mappers.ReservationMapper;
 import com.magicasprincesas.candybar.repositories.CustomerRepository;
 import com.magicasprincesas.candybar.repositories.ReservationRepository;
@@ -30,6 +32,10 @@ public class ReservationImplService implements ReservationService {
 
   @Autowired
   private CustomerRepository customerRepository;
+  
+  @Autowired
+  private CustomerMapper customerMapper;
+  
 
   @Override
   public ReservationResponseDto saveReservation(ReservationRequestDto requestDto) {
@@ -44,12 +50,34 @@ public class ReservationImplService implements ReservationService {
     if (reservationsCount >= 3) {
       throw new CustomException("Cannot book more than 3 reservations per day.");
     }
-    Customer customer = customerRepository.findById(requestDto.getCustomerId())
-        .orElseThrow(() -> new CustomException("Cliente no encontrado con ID: " + requestDto.getCustomerId()));
+    Customer customer = customerRepository
+        .findByFirstNameIgnoreCaseAndLastNameIgnoreCase(requestDto.getFirstName(), requestDto.getLastName())
+        .orElseGet(() -> {
+            CustomerRequestDto customerRequestDto = new CustomerRequestDto();
+            customerRequestDto.setFirstName(requestDto.getFirstName());
+            customerRequestDto.setLastName(requestDto.getLastName());
+            customerRequestDto.setPhone(requestDto.getPhone());
+
+            Customer newCustomer = customerMapper.toEntity(customerRequestDto);
+            return customerRepository.save(newCustomer);
+        });
+
+    if (requestDto.getPhone() != null && !requestDto.getPhone().equals(customer.getPhone())) {
+        customer.setPhone(requestDto.getPhone());
+        customerRepository.save(customer);
+    }
 
     Reservation reservation = reservationMapper.toEntity(requestDto);
     reservation.setCustomer(customer);
     reservation = reservationRepository.save(reservation);
+
+    return reservationMapper.toDto(reservation);
+  }
+
+  @Override
+  public ReservationResponseDto getReservationById(Long id) {
+    Reservation reservation = reservationRepository.findById(id)
+        .orElseThrow(() -> new CustomException("Reserva no encontrada"));
     return reservationMapper.toDto(reservation);
   }
 
@@ -78,17 +106,29 @@ public class ReservationImplService implements ReservationService {
   @Override
   public ReservationResponseDto updateReservation(Long id, ReservationRequestDto request) {
     Reservation reservation = reservationRepository.findById(id)
-        .orElseThrow(() -> new CustomException("Reservation not found with id: " + id));
+        .orElseThrow(() -> new CustomException("Reserva no encontrada con id: " + id));
 
-    Customer customer = customerRepository.findById(request.getCustomerId())
-        .orElseThrow(() -> new CustomException("Customer not found with id: " + request.getCustomerId()));
+    Customer customer = customerRepository
+        .findByFirstNameIgnoreCaseAndLastNameIgnoreCase(request.getFirstName(), request.getLastName())
+        .orElseGet(() -> {
+          CustomerRequestDto customerRequestDto = new CustomerRequestDto();
+          customerRequestDto.setFirstName(request.getFirstName());
+          customerRequestDto.setLastName(request.getLastName());
+          customerRequestDto.setPhone(request.getPhone());
+          Customer newCustomer = customerMapper.toEntity(customerRequestDto);
+          return customerRepository.save(newCustomer);
+        });
 
-    reservation.setReservationDate(request.getReservationDate());
-    reservation.setDeposit(request.getDeposit());
+    if (request.getPhone() != null && !request.getPhone().equals(customer.getPhone())) {
+      customer.setPhone(request.getPhone());
+      customerRepository.save(customer);
+    }
+
+    reservationMapper.updateReservationFromDto(request, reservation);
     reservation.setCustomer(customer);
 
-    reservation = reservationRepository.save(reservation);
-    return reservationMapper.toDto(reservation);
+    Reservation updatedReservation = reservationRepository.save(reservation);
+    return reservationMapper.toDto(updatedReservation);
   }
 
   @Override

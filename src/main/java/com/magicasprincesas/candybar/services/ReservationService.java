@@ -8,6 +8,7 @@ import com.magicasprincesas.candybar.dtos.ReservationResponseDto;
 
 public interface ReservationService {
   ReservationResponseDto saveReservation(ReservationRequestDto requestDto);
+  ReservationResponseDto getReservationById(Long id);
   List<ReservationResponseDto> getReservationsByDate(LocalDate date);
   List<ReservationResponseDto> getAllReservations();
   void deleteReservation(Long id);

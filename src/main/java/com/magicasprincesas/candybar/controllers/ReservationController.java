@@ -49,6 +49,16 @@ public class ReservationController {
     return reservationService.getReservationsByDate(reservationDate);
   }
 
+  @GetMapping("/{id}")
+  public ResponseEntity<ReservationResponseDto> getReservationById(@PathVariable Long id) {
+    try {
+      ReservationResponseDto response = reservationService.getReservationById(id);
+      return ResponseEntity.ok(response);
+    } catch (CustomException e) {
+      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+    }
+  }
+
   @GetMapping
   public List<ReservationResponseDto> getAllReservations() {
     return reservationService.getAllReservations();
@@ -63,8 +73,12 @@ public class ReservationController {
   }
 
   @PutMapping("/{id}")
-  public ReservationResponseDto updateReservation(@PathVariable Long id, @RequestBody ReservationRequestDto request) {
-    return reservationService.updateReservation(id, request);
+  public ResponseEntity<ReservationResponseDto> updateReservation(
+      @PathVariable Long id,
+      @RequestBody ReservationRequestDto request) {
+
+    ReservationResponseDto response = reservationService.updateReservation(id, request);
+    return ResponseEntity.ok(response);
   }
 
   @DeleteMapping("/past")
