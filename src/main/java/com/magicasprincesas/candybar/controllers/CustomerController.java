@@ -24,7 +24,7 @@ public class CustomerController {
   @Autowired
   private CustomerService customerService;
 
-  @PostMapping("/customers")
+  @PostMapping
   public ResponseEntity<CustomerResponseDto> createCustomer(@RequestBody CustomerRequestDto requestDto) {
     CustomerResponseDto customer = customerService.saveCustomer(requestDto);
     return new ResponseEntity<>(customer, HttpStatus.CREATED);
