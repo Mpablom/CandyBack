@@ -32,7 +32,7 @@ public class Reservation {
   private boolean deleted;
   private String location;
   private String description;
-  private String starTime;
+  private String startTime;
 
   @ManyToOne
   @JoinColumn(name = "customer_id", nullable = false)

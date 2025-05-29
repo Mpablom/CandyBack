@@ -20,6 +20,6 @@ public class ReservationResponseDto {
   private boolean deleted;
   private String location;
   private String description;
-  private String starTime;
+  private String startTime;
   private CustomerResponseDto customer;
 }
