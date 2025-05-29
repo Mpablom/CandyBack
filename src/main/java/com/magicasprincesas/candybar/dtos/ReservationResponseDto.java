@@ -17,7 +17,9 @@ public class ReservationResponseDto {
   private Long id;
   private LocalDate reservationDate;
   private double deposit;
-  private boolean deleted; 
+  private boolean deleted;
   private String location;
+  private String description;
+  private String starTime;
   private CustomerResponseDto customer;
 }

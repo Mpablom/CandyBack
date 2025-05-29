@@ -18,6 +18,8 @@ public class ReservationRequestDto {
   private double deposit;
   private boolean deleted;
   private String location;
+  private String description;
+  private String startTime;
 
   private String firstName;
   private String lastName;

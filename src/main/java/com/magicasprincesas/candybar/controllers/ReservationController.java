@@ -32,7 +32,7 @@ public class ReservationController {
 
   @PostMapping
   public ResponseEntity<?> createReservation(@RequestBody ReservationRequestDto request) {
-        System.out.println("Solicitud recibida: " + request.getFirstName() + " " + request.getLastName());
+    System.out.println("order receiveda: " + request.getFirstName() + " " + request.getLastName());
     try {
       ReservationResponseDto response = reservationService.saveReservation(request);
       return new ResponseEntity<>(response, HttpStatus.CREATED);
@@ -104,7 +104,7 @@ public class ReservationController {
     reservationService.deletePastReservationsAndCustomers();
 
     Map<String, String> response = new HashMap<>();
-    response.put("message", "Reservas pasadas y clientes asociados eliminados correctamente");
+    response.put("message", "Past bookings and associated customers successfully deleted");
 
     return ResponseEntity.ok(response);
   }
