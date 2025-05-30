@@ -21,6 +21,7 @@ import com.magicasprincesas.candybar.services.ReservationService;
 import jakarta.transaction.Transactional;
 
 @Service
+@Transactional
 public class ReservationImplService implements ReservationService {
 
   private final ReservationRepository reservationRepository;
@@ -117,6 +118,7 @@ public class ReservationImplService implements ReservationService {
   }
 
   @Override
+  @Transactional
   public ReservationResponseDto updateReservation(Long id, ReservationRequestDto request) {
     Reservation reservation = reservationRepository.findById(id)
         .orElseThrow(() -> new CustomException("Reservation not found with id: " + id));
